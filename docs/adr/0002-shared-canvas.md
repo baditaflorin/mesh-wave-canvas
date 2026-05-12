@@ -15,9 +15,9 @@ Skip handoff messaging entirely. Instead, model **one shared virtual canvas** of
 
 ```ts
 type Ripple = {
-  x: number;          // 0..1 across the SHARED canvas
-  y: number;          // 0..1 down the SHARED canvas
-  t0: number;         // mesh-time origin
+  x: number; // 0..1 across the SHARED canvas
+  y: number; // 0..1 down the SHARED canvas
+  t0: number; // mesh-time origin
   hue: number;
   originIndex: number;
   id: string;
