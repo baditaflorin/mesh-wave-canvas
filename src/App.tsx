@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { MeshShell } from "@baditaflorin/mesh-common";
 import { WaveCanvas } from "./features/wave/WaveCanvas";
-import { SettingsDrawer } from "./features/settings/SettingsDrawer";
+import { SettingsExtras } from "./features/settings/SettingsExtras";
 import { appConfig } from "./shared/config";
-import { InviteShareButton, MeshBeacon } from "@baditaflorin/mesh-common";
 
 const STORAGE = {
   room: `${appConfig.storagePrefix}:room`,
@@ -22,7 +22,6 @@ export function App() {
   const [speed, setSpeed] = useState(() =>
     Math.max(50, Number(localStorage.getItem(STORAGE.speed) ?? "500")),
   );
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE.room, roomId);
@@ -38,52 +37,27 @@ export function App() {
   }, [speed]);
 
   return (
-    <div className="app-root">
+    <MeshShell
+      config={appConfig}
+      roomId={roomId}
+      onRoomChange={setRoomId}
+      settingsExtras={
+        <SettingsExtras
+          myIndex={myIndex}
+          onMyIndexChange={setMyIndex}
+          totalPhones={totalPhones}
+          onTotalPhonesChange={setTotalPhones}
+          speed={speed}
+          onSpeedChange={setSpeed}
+        />
+      }
+    >
       <WaveCanvas
         roomId={roomId}
         myIndex={Math.min(myIndex, totalPhones - 1)}
         totalPhones={totalPhones}
         speedPxPerSec={speed}
       />
-
-      <InviteShareButton appName={appConfig.appName} roomId={roomId} />
-      <MeshBeacon app={appConfig.appName} room={roomId} />
-
-      <button
-        type="button"
-        className="settings-fab"
-        onClick={() => setSettingsOpen(true)}
-        aria-label="Open settings"
-      >
-        ⚙
-      </button>
-
-      <div className="self-ref">
-        <a href={appConfig.repositoryUrl} target="_blank" rel="noreferrer">
-          source
-        </a>
-        <span aria-hidden="true">·</span>
-        <a href={appConfig.paypalUrl} target="_blank" rel="noreferrer">
-          tip ♥
-        </a>
-        <span aria-hidden="true">·</span>
-        <span>
-          v{appConfig.version} · {appConfig.commit}
-        </span>
-      </div>
-
-      <SettingsDrawer
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        roomId={roomId}
-        onRoomChange={setRoomId}
-        myIndex={myIndex}
-        onMyIndexChange={setMyIndex}
-        totalPhones={totalPhones}
-        onTotalPhonesChange={setTotalPhones}
-        speed={speed}
-        onSpeedChange={setSpeed}
-      />
-    </div>
+    </MeshShell>
   );
 }

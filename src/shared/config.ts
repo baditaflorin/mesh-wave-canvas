@@ -1,6 +1,9 @@
 export const appConfig = {
   appName: "mesh-wave-canvas",
   storagePrefix: "mesh-wave-canvas",
+  description:
+    "Line up phones in a row and watch a single wave sweep across all their screens in real time.",
+  accentHex: "#5eafff",
   version: __APP_VERSION__,
   commit: __GIT_COMMIT__,
   repositoryUrl: "https://github.com/baditaflorin/mesh-wave-canvas",
