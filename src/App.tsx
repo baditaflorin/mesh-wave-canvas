@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { WaveCanvas } from "./features/wave/WaveCanvas";
 import { SettingsDrawer } from "./features/settings/SettingsDrawer";
 import { appConfig } from "./shared/config";
+import { InviteShareButton } from "@baditaflorin/mesh-common";
 
 const STORAGE = {
   room: `${appConfig.storagePrefix}:room`,
@@ -45,6 +46,7 @@ export function App() {
         speedPxPerSec={speed}
       />
 
+      <InviteShareButton appName={appConfig.appName} roomId={roomId} />
       <button
         type="button"
         className="settings-fab"
