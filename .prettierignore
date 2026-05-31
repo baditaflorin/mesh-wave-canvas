@@ -3,3 +3,8 @@ docs/assets
 docs/index.html
 docs/404.html
 package-lock.json
+# Propagated fleet docs (maintained canonically in services-registry, injected
+# via fleet-runner). They are not prettier-clean at origin and reformatting them
+# here would fork the canonical copy — ignore so fmt:check doesn't fight them.
+CLAUDE.md
+SERVICE-TEMPLATE.md

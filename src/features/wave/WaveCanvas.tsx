@@ -26,6 +26,7 @@ const RIPPLE_LIFETIME_MS = 6000;
 export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Props) {
   const [armed, setArmed] = useState(false);
   const [peers, setPeers] = useState(0);
+  const [rippleCount, setRippleCount] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ripplesRef = useRef<Ripple[]>([]);
 
@@ -53,6 +54,12 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
     if (!mesh) return undefined;
     const update = () => {
       ripplesRef.current = mesh.ripples.toArray();
+      // Reflect the shared-array length reactively. This fires on every Yjs
+      // change — including ripples a remote peer pushed — so the HUD count
+      // and the `data-ripple-count` test hook update the instant a peer's
+      // tap crosses the mesh, not only on the incidental 500ms peer-poll
+      // re-render.
+      setRippleCount(ripplesRef.current.length);
     };
     mesh.ripples.observe(update);
     update();
@@ -205,11 +212,10 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
   }
 
   return (
-    <div className="wave-stage">
+    <div className="wave-stage" data-ripple-count={rippleCount}>
       <canvas ref={canvasRef} className="wave-canvas" onPointerDown={onTap} />
       <div className="wave-hud">
-        phone {myIndex + 1} / {totalPhones} · {peers + 1} connected · {ripplesRef.current.length}{" "}
-        ripples
+        phone {myIndex + 1} / {totalPhones} · {peers + 1} connected · {rippleCount} ripples
       </div>
     </div>
   );
