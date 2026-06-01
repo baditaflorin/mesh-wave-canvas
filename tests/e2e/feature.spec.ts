@@ -41,6 +41,13 @@ test("peer A's tap creates a ripple that peer B observes in the shared doc", asy
     await expect(stageA).toBeVisible();
     await expect(stageB).toBeVisible();
 
+    // Once the two peers see each other, the "you're alone" hint goes away.
+    // This proves the solo-hint is wired to the real peer count, not a static
+    // banner — a newcomer alone in a room gets the "open on another phone" nudge
+    // and it disappears the moment a real peer joins.
+    await expect(a.locator(".wave-solo-hint")).toBeHidden({ timeout: 10_000 });
+    await expect(b.locator(".wave-solo-hint")).toBeHidden({ timeout: 10_000 });
+
     // Baseline: no ripples have been created in the shared doc yet.
     await expect(stageB).toHaveAttribute("data-ripple-count", "0");
 

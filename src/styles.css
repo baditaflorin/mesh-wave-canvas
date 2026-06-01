@@ -95,6 +95,23 @@ body,
   pointer-events: none;
 }
 
+.wave-solo-hint {
+  position: absolute;
+  bottom: max(env(safe-area-inset-bottom), 4.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(28rem, 88vw);
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(232, 232, 255, 0.85);
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.7em 1.1em;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
 .version-badge {
   position: absolute;
   bottom: max(env(safe-area-inset-bottom), 0.75rem);

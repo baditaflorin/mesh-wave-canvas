@@ -217,6 +217,12 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
       <div className="wave-hud">
         phone {myIndex + 1} / {totalPhones} · {peers + 1} connected · {rippleCount} ripples
       </div>
+      {peers === 0 ? (
+        <div className="wave-solo-hint">
+          Tap anywhere to start a ripple. Open this page on another phone (same room) and lay them
+          side by side — the wave flows across the gap.
+        </div>
+      ) : null}
     </div>
   );
 }
