@@ -23,6 +23,26 @@ type Props = {
 
 const RIPPLE_LIFETIME_MS = 6000;
 
+// Ripples come from a shared Y.Array — any connected peer can push arbitrary
+// JSON into it (not just via onTap; a peer's devtools console can call
+// `mesh.ripples.push([...])` directly). Treat every entry as untrusted input:
+// a non-finite `t0`/`x`/`y` (NaN, Infinity, wrong type) would otherwise
+// compute a non-finite `age`, which the lifetime/GC checks below can never
+// see as ">RIPPLE_LIFETIME_MS" — so a single malformed entry becomes
+// permanent, un-collectable garbage in the shared doc for every peer, forever.
+function isFiniteRipple(r: unknown): r is Ripple {
+  if (!r || typeof r !== "object") return false;
+  const { x, y, t0 } = r as Partial<Ripple>;
+  return (
+    typeof x === "number" &&
+    Number.isFinite(x) &&
+    typeof y === "number" &&
+    Number.isFinite(y) &&
+    typeof t0 === "number" &&
+    Number.isFinite(t0)
+  );
+}
+
 export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Props) {
   const [armed, setArmed] = useState(false);
   const [peers, setPeers] = useState(0);
@@ -53,7 +73,7 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
   useEffect(() => {
     if (!mesh) return undefined;
     const update = () => {
-      ripplesRef.current = mesh.ripples.toArray();
+      ripplesRef.current = mesh.ripples.toArray().filter(isFiniteRipple);
       // Reflect the shared-array length reactively. This fires on every Yjs
       // change — including ripples a remote peer pushed — so the HUD count
       // and the `data-ripple-count` test hook update the instant a peer's
@@ -159,13 +179,30 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
     const gc = setInterval(() => {
       if (!mesh) return;
       const t = mesh.clock.meshNow();
-      const dead = mesh.ripples.toArray().filter((r) => t - r.t0 > RIPPLE_LIFETIME_MS).length;
-      if (dead > 0) {
-        mesh.room.doc.transact(() => {
-          // Delete the first `dead` items (the oldest)
-          mesh.ripples.delete(0, dead);
-        });
-      }
+      const arr = mesh.ripples.toArray();
+      mesh.room.doc.transact(() => {
+        // Delete precisely the dead/malformed entries by index, scanning
+        // back-to-front so each delete doesn't shift the index of entries
+        // still to be checked.
+        //
+        // The array's front-to-back order is Yjs insertion (causal) order,
+        // not necessarily age order — concurrent taps from two peers with
+        // slightly different mesh-clock offsets, or a merge after a
+        // reconnect, can land an older `t0` behind a younger one. The
+        // previous implementation counted how many entries were dead and
+        // deleted that many from the front (`delete(0, dead)`), which
+        // silently assumed index order === age order: it could delete a
+        // live, freshly-tapped ripple (cutting its animation short for
+        // every peer) while an actually-dead entry further back survived.
+        // Also purge entries `isFiniteRipple` rejects (NaN/Infinity/wrong
+        // type `t0`), which otherwise never satisfy `t - t0 > LIFETIME`
+        // and would sit in the shared doc forever.
+        for (let i = arr.length - 1; i >= 0; i--) {
+          const r = arr[i];
+          const isDead = !isFiniteRipple(r) || t - r.t0 > RIPPLE_LIFETIME_MS;
+          if (isDead) mesh.ripples.delete(i, 1);
+        }
+      });
     }, 5000);
 
     return () => {
@@ -184,6 +221,11 @@ export function WaveCanvas({ roomId, myIndex, totalPhones, speedPxPerSec }: Prop
     const sharedWidth = totalPhones * w;
     const sharedX = (myIndex * w + localX) / sharedWidth;
     const sharedY = localY / h;
+    // A zero-size rect (canvas tapped before layout has settled) would
+    // divide-by-zero into Infinity/NaN here. Never write a non-finite ripple
+    // into the shared doc — see isFiniteRipple's comment for why that's
+    // effectively permanent garbage once it lands in the CRDT array.
+    if (!Number.isFinite(sharedX) || !Number.isFinite(sharedY)) return;
     const ripple: Ripple = {
       id: crypto.randomUUID(),
       originIndex: myIndex,
