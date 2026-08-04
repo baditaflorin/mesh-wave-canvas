@@ -57,8 +57,21 @@ export function createClockSync(provider: WebrtcProvider | null): ClockSync {
     states.forEach((state, id) => {
       if (id === awareness.clientID) return;
       const clock = state["clock"] as { t?: number } | undefined;
-      if (typeof clock?.t === "number") {
-        samples.set(id, { offset: clock.t - now, receivedAt: now });
+      // A peer's awareness state is untrusted input — any connected peer can
+      // publish arbitrary JSON here (including from devtools). `typeof x ===
+      // "number"` alone lets NaN/Infinity through, which then poisons the
+      // median in meshNow() below (an even-length sample set averages the
+      // NaN in, and Array#sort's comparator contract breaks down entirely in
+      // the presence of NaN, so odd-length sets can silently pick the wrong
+      // median too). A NaN mesh time propagates into every ripple's `age`
+      // calculation and, worse, gets baked into `t0` on the next local tap —
+      // permanently un-collectable garbage in the shared Y.Array, since the
+      // GC sweep below can never see `t - t0 > LIFETIME` as true for NaN.
+      // Require a finite number so one malformed/malicious peer can't wedge
+      // the whole mesh's clock.
+      const offset = clock?.t;
+      if (typeof offset === "number" && Number.isFinite(offset)) {
+        samples.set(id, { offset: offset - now, receivedAt: now });
       }
     });
   };
